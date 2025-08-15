@@ -9,47 +9,87 @@ from scipy.stats import gaussian_kde
 # Page config
 st.set_page_config(page_title="Store Location Optimization", page_icon="🏪", layout="wide")
 
+# Cache expensive computations
+@st.cache_data
+def load_and_process_data(uploaded_file):
+    """Cache data loading and initial processing"""
+    data = pd.read_csv(uploaded_file, index_col=0)
+    return data
+
+@st.cache_data
+def perform_clustering(x, n_clusters, random_state=10):
+    """Cache clustering results"""
+    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=10)
+    y_kmeans = kmeans.fit_predict(x)
+    return kmeans, y_kmeans
+
+@st.cache_data
+def calculate_elbow_method(x, max_clusters=10):
+    """Cache elbow method calculation"""
+    wsse = []
+    k_range = range(1, max_clusters + 1)
+    
+    progress_bar = st.progress(0)
+    for i, k in enumerate(k_range):
+        kmeans = KMeans(n_clusters=k, random_state=10, n_init=10)
+        kmeans.fit(x)
+        wsse.append(kmeans.inertia_)
+        progress_bar.progress((i + 1) / len(k_range))
+    
+    progress_bar.empty()
+    return k_range, wsse
+
 # Title
-st.title("🏪 Store Location Optimization")
+st.title("Store Location Optimization")
 
 # Sidebar parameters
-st.sidebar.header("⚙️ Parameters")
+st.sidebar.header("Parameters")
 n_clusters = st.sidebar.slider("Number of Clusters", 2, 10, 5)
 density_threshold = st.sidebar.slider("Density Threshold (%)", 5, 50, 10)
 percentile_coverage = st.sidebar.slider("Percentile Coverage (%)", 80, 99, 95)
+
+# Performance options
+st.sidebar.header("Performance Options")
+show_elbow = st.sidebar.checkbox("Show Elbow Method (slower)", value=False)
+max_elbow_clusters = st.sidebar.slider("Max Clusters for Elbow", 5, 15, 8) if show_elbow else 8
 
 # File upload
 uploaded_file = st.sidebar.file_uploader("Upload CSV File", type=['csv'])
 
 if uploaded_file is not None:
     try:
-        # Load data
+        # Load data with caching
         with st.spinner("Loading data..."):
-            data = pd.read_csv(uploaded_file, index_col=0)
+            data = load_and_process_data(uploaded_file)
         
-        st.success(f"✅ Data loaded: {len(data)} orders")
-          
+        st.success(f"Data loaded: {len(data)} orders")
+        
+        # Quick data overview
+        st.info(f"**Data Summary:** {len(data)} orders | Lat: {data['Lat'].min():.4f} to {data['Lat'].max():.4f} | Long: {data['Long'].min():.4f} to {data['Long'].max():.4f}")
+        
         # Prepare data for clustering
         x = data[['Lat', 'Long']].values
         
         # Original clustering (100% coverage)
-        st.header("🎯 Clustering Analysis")
+        st.header("Clustering Analysis")
         
-        # Elbow method
-        with st.spinner("Calculating optimal clusters..."):
-            wsse = []
-            k_range = range(1, 16)
+        # Elbow method (optional for performance)
+        if show_elbow:
+            st.subheader("Elbow Method - Optimal Number of Clusters")
+            with st.spinner("Calculating optimal clusters (this may take a moment)..."):
+                k_range, wsse = calculate_elbow_method(x, max_elbow_clusters)
             
-            for i in k_range:
-                kmeans = KMeans(n_clusters=i, random_state=10, n_init=10)
-                kmeans.fit(x)
-                wsse.append(kmeans.inertia_)
+            # Elbow plot
+            fig_elbow = go.Figure()
+            fig_elbow.add_trace(go.Scatter(x=list(k_range), y=wsse, mode='lines+markers'))
+            fig_elbow.update_layout(title="Elbow Method - Optimal Number of Clusters", height=400)
+            st.plotly_chart(fig_elbow, use_container_width=True)
+        else:
+            st.info("**Tip:** Enable 'Show Elbow Method' in sidebar for optimal cluster analysis")
         
-        
-        # Perform clustering
+        # Perform clustering with caching
         with st.spinner("Performing clustering..."):
-            kmeans_original = KMeans(n_clusters=n_clusters, random_state=10, n_init=10)
-            y_kmeans_original = kmeans_original.fit_predict(x)
+            kmeans_original, y_kmeans_original = perform_clustering(x, n_clusters)
             
             # Add cluster results
             data['cluster_original'] = y_kmeans_original
@@ -62,11 +102,12 @@ if uploaded_file is not None:
             )
         
         # Parameter-based filtering
-        st.header("📊 Parameter-Based Analysis")
+        st.header("Parameter-Based Analysis")
         
-        # Calculate density
-        kde = gaussian_kde(x.T)
-        data['density'] = kde(x.T)
+        # Calculate density with progress
+        with st.spinner("Calculating density distribution..."):
+            kde = gaussian_kde(x.T)
+            data['density'] = kde(x.T)
         
         # Filter based on parameters
         density_cutoff = data['density'].quantile(density_threshold/100)
@@ -77,26 +118,26 @@ if uploaded_file is not None:
             (data['distance_original'] <= distance_cutoff)
         ].copy()
         
-        st.info(f"📈 **Filtered Data:** {len(filtered_data)} orders ({len(filtered_data)/len(data)*100:.1f}% of total)")
+        st.info(f"**Filtered Data:** {len(filtered_data)} orders ({len(filtered_data)/len(data)*100:.1f}% of total)")
         
         # Clustering on filtered data
         if len(filtered_data) > n_clusters:
-            x_filtered = filtered_data[['Lat', 'Long']].values
-            kmeans_filtered = KMeans(n_clusters=n_clusters, random_state=10, n_init=10)
-            y_kmeans_filtered = kmeans_filtered.fit_predict(x_filtered)
-            filtered_data['cluster_filtered'] = y_kmeans_filtered
-            
-            # Calculate distances for filtered clustering
-            filtered_data['distance_filtered'] = filtered_data.apply(
-                lambda row: np.sqrt(
-                    (row['Lat'] - kmeans_filtered.cluster_centers_[int(row['cluster_filtered'])][0])**2 +
-                    (row['Long'] - kmeans_filtered.cluster_centers_[int(row['cluster_filtered'])][1])**2
-                ) * 111,
-                axis=1
-            )
+            with st.spinner("Performing filtered clustering..."):
+                x_filtered = filtered_data[['Lat', 'Long']].values
+                kmeans_filtered, y_kmeans_filtered = perform_clustering(x_filtered, n_clusters)
+                filtered_data['cluster_filtered'] = y_kmeans_filtered
+                
+                # Calculate distances for filtered clustering
+                filtered_data['distance_filtered'] = filtered_data.apply(
+                    lambda row: np.sqrt(
+                        (row['Lat'] - kmeans_filtered.cluster_centers_[int(row['cluster_filtered'])][0])**2 +
+                        (row['Long'] - kmeans_filtered.cluster_centers_[int(row['cluster_filtered'])][1])**2
+                    ) * 111,
+                    axis=1
+                )
         
         # Visualization
-        st.header("📈 Clustering Comparison")
+        st.header("Clustering Comparison")
         
         col1, col2 = st.columns(2)
         
@@ -138,7 +179,7 @@ if uploaded_file is not None:
                 st.warning("Insufficient data for clustering after filtering")
         
         # Interactive Map using Plotly
-        st.header("🗺️ Interactive Map")
+        st.header("Interactive Map")
         
         # Create map using Plotly
         fig_map = go.Figure()
@@ -172,8 +213,8 @@ if uploaded_file is not None:
                 hovertemplate='<b>%{text}</b><br>Lat: %{y:.4f}<br>Long: %{x:.4f}<extra></extra>'
             ))
         
-        # Add order points (sample for performance)
-        sample_size = min(2000, len(data))
+        # Add order points (optimized for performance)
+        sample_size = min(1000, len(data))  # Reduced sample size for faster rendering
         sample_data = data.sample(n=sample_size, random_state=42)
         
         for cluster_id in range(n_clusters):
@@ -183,7 +224,7 @@ if uploaded_file is not None:
                     x=cluster_data['Long'],
                     y=cluster_data['Lat'],
                     mode='markers',
-                    marker=dict(size=3, color=colors[cluster_id % len(colors)]),
+                    marker=dict(size=2, color=colors[cluster_id % len(colors)]),  # Smaller markers
                     name=f'Cluster {cluster_id} Orders',
                     hovertemplate='<b>Order</b><br>Lat: %{y:.4f}<br>Long: %{x:.4f}<extra></extra>',
                     showlegend=False
@@ -194,14 +235,14 @@ if uploaded_file is not None:
             title="Interactive Map - Clusters and Centers",
             xaxis_title="Longitude",
             yaxis_title="Latitude",
-            height=600,
+            height=500,  # Reduced height
             hovermode='closest'
         )
         
         st.plotly_chart(fig_map, use_container_width=True)
         
         # Cost Analysis
-        st.header("💰 Cost Analysis")
+        st.header("Cost Analysis")
         
         # Cost parameters
         cost_per_km = 10
@@ -235,15 +276,15 @@ if uploaded_file is not None:
         
         # Cost comparison
         if len(filtered_data) > n_clusters:
-            st.subheader("�� Cost Comparison")
+            st.subheader("Cost Comparison")
             
             cost_savings = total_cost_original - total_cost_filtered
             savings_percentage = (cost_savings / total_cost_original) * 100
             
             if cost_savings > 0:
-                st.success(f"🎉 **Cost Savings: ₹{cost_savings:,.0f} ({savings_percentage:.1f}%)**")
+                st.success(f"**Cost Savings: ₹{cost_savings:,.0f} ({savings_percentage:.1f}%)**")
             else:
-                st.warning(f"⚠️ **Additional Cost: ₹{abs(cost_savings):,.0f}**")
+                st.warning(f"**Additional Cost: ₹{abs(cost_savings):,.0f}**")
             
             # Comparison chart
             comparison_data = pd.DataFrame({
@@ -260,7 +301,7 @@ if uploaded_file is not None:
             st.plotly_chart(fig_comparison, use_container_width=True)
         
         # Download results
-        st.header("📥 Download Results")
+        st.header("Download Results")
         
         if len(filtered_data) > n_clusters:
             # Prepare data for download
@@ -274,18 +315,18 @@ if uploaded_file is not None:
             
             csv = results_data.to_csv(index=True)
             st.download_button(
-                label="📊 Download Analysis Results (CSV)",
+                label="Download Analysis Results (CSV)",
                 data=csv,
                 file_name="clustering_analysis_results.csv",
                 mime="text/csv"
             )
         
     except Exception as e:
-        st.error(f"❌ Error: {str(e)}")
+        st.error(f"Error: {str(e)}")
         st.info("Please ensure your CSV has 'Lat' and 'Long' columns")
 
 else:
-    st.info("👆 Please upload a CSV file to begin the analysis")
+    st.info("Please upload a CSV file to begin the analysis")
     
     st.markdown("""
     ### Expected CSV Format:
@@ -297,6 +338,10 @@ else:
     ```
     """)
 
-# Footer
-st.markdown("---")
-st.markdown("🏪 **Store Location Optimization Tool** | Cost Cutting Analysis")
+# Performance tips
+st.sidebar.markdown("---")
+st.sidebar.markdown("** Performance Tips:**")
+st.sidebar.markdown("- Disable elbow method for faster loading")
+st.sidebar.markdown("- Reduce max clusters for elbow method")
+st.sidebar.markdown("- Use smaller datasets for better performance")
+
