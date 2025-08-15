@@ -45,7 +45,7 @@ st.title("Store Location Optimization")
 # Sidebar parameters
 st.sidebar.header("Parameters")
 n_clusters = st.sidebar.slider("Number of Clusters", 2, 10, 5)
-density_threshold = st.sidebar.slider("Density Threshold (%)", 5, 50, 10)
+density_threshold = st.sidebar.slider("Density Threshold (%)", 0, 50, 10)
 percentile_coverage = st.sidebar.slider("Percentile Coverage (%)", 80, 99, 95)
 
 # Performance options
@@ -136,16 +136,16 @@ if uploaded_file is not None:
                     axis=1
                 )
         
-        # Visualization
-        st.header("Clustering Comparison")
+        # Basic Visualization - Simple Scatter Plots
+        st.header("Basic Visualization")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("Original Clustering (100% Coverage)")
+            st.subheader("Original Data (100% Coverage)")
             fig_original = px.scatter(
-                data, x='Long', y='Lat', color='cluster_original',
-                title=f"Original: {n_clusters} Clusters, {len(data)} Orders"
+                data, x='Long', y='Lat', 
+                title=f"Original Data: {len(data)} Orders"
             )
             # Add cluster centers
             centers_original = kmeans_original.cluster_centers_
@@ -160,10 +160,10 @@ if uploaded_file is not None:
         
         with col2:
             if len(filtered_data) > n_clusters:
-                st.subheader(f"Filtered Clustering ({len(filtered_data)} Orders)")
+                st.subheader(f"Filtered Data ({len(filtered_data)} Orders)")
                 fig_filtered = px.scatter(
-                    filtered_data, x='Long', y='Lat', color='cluster_filtered',
-                    title=f"Filtered: {n_clusters} Clusters, {len(filtered_data)} Orders"
+                    filtered_data, x='Long', y='Lat', 
+                    title=f"Filtered Data: {len(filtered_data)} Orders"
                 )
                 # Add cluster centers
                 centers_filtered = kmeans_filtered.cluster_centers_
@@ -178,68 +178,43 @@ if uploaded_file is not None:
             else:
                 st.warning("Insufficient data for clustering after filtering")
         
-        # Interactive Map using Plotly
-        st.header("Interactive Map")
+        # Comparison Graph (as shown in your notebook)
+        st.header("Comparison: Overall vs Filtered Data")
         
-        # Create map using Plotly
-        fig_map = go.Figure()
+        # Create the comparison plot similar to your notebook
+        fig_comparison = go.Figure()
         
-        # Colors for clusters
-        colors = ['red', 'blue', 'green', 'purple', 'orange', 'darkred', 'lightred', 
-                 'beige', 'darkblue', 'darkgreen', 'cadetblue', 'darkpurple']
-        
-        # Add original cluster centers
-        centers_original = kmeans_original.cluster_centers_
-        fig_map.add_trace(go.Scatter(
-            x=centers_original[:, 1],
-            y=centers_original[:, 0],
+        # Add overall data
+        fig_comparison.add_trace(go.Scatter(
+            x=data['Long'], 
+            y=data['Lat'], 
             mode='markers',
-            marker=dict(size=20, color='red', symbol='x'),
-            name='Original Cluster Centers',
-            text=[f'Cluster {i}' for i in range(n_clusters)],
-            hovertemplate='<b>%{text}</b><br>Lat: %{y:.4f}<br>Long: %{x:.4f}<extra></extra>'
+            marker=dict(size=3, color='blue', alpha=0.5),
+            name='Overall Data',
+            hovertemplate='<b>Overall</b><br>Lat: %{y:.4f}<br>Long: %{x:.4f}<extra></extra>'
         ))
         
-        # Add filtered cluster centers if available
+        # Add filtered data if available
         if len(filtered_data) > n_clusters:
-            centers_filtered = kmeans_filtered.cluster_centers_
-            fig_map.add_trace(go.Scatter(
-                x=centers_filtered[:, 1],
-                y=centers_filtered[:, 0],
+            fig_comparison.add_trace(go.Scatter(
+                x=filtered_data['Long'], 
+                y=filtered_data['Lat'], 
                 mode='markers',
-                marker=dict(size=20, color='orange', symbol='star'),
-                name='Filtered Cluster Centers',
-                text=[f'Filtered Cluster {i}' for i in range(n_clusters)],
-                hovertemplate='<b>%{text}</b><br>Lat: %{y:.4f}<br>Long: %{x:.4f}<extra></extra>'
+                marker=dict(size=3, color='red', alpha=0.7),
+                name='Filtered Data',
+                hovertemplate='<b>Filtered</b><br>Lat: %{y:.4f}<br>Long: %{x:.4f}<extra></extra>'
             ))
         
-        # Add order points (optimized for performance)
-        sample_size = min(1000, len(data))  # Reduced sample size for faster rendering
-        sample_data = data.sample(n=sample_size, random_state=42)
-        
-        for cluster_id in range(n_clusters):
-            cluster_data = sample_data[sample_data['cluster_original'] == cluster_id]
-            if len(cluster_data) > 0:
-                fig_map.add_trace(go.Scatter(
-                    x=cluster_data['Long'],
-                    y=cluster_data['Lat'],
-                    mode='markers',
-                    marker=dict(size=2, color=colors[cluster_id % len(colors)]),  # Smaller markers
-                    name=f'Cluster {cluster_id} Orders',
-                    hovertemplate='<b>Order</b><br>Lat: %{y:.4f}<br>Long: %{x:.4f}<extra></extra>',
-                    showlegend=False
-                ))
-        
-        # Update layout for map
-        fig_map.update_layout(
-            title="Interactive Map - Clusters and Centers",
-            xaxis_title="Longitude",
-            yaxis_title="Latitude",
-            height=500,  # Reduced height
+        # Update layout
+        fig_comparison.update_layout(
+            title='Comparison of Overall and Filtered Order Data',
+            xaxis_title='Longitude',
+            yaxis_title='Latitude',
+            height=500,
             hovermode='closest'
         )
         
-        st.plotly_chart(fig_map, use_container_width=True)
+        st.plotly_chart(fig_comparison, use_container_width=True)
         
         # Cost Analysis
         st.header("Cost Analysis")
@@ -340,8 +315,9 @@ else:
 
 # Performance tips
 st.sidebar.markdown("---")
-st.sidebar.markdown("** Performance Tips:**")
+st.sidebar.markdown("**Performance Tips:**")
 st.sidebar.markdown("- Disable elbow method for faster loading")
 st.sidebar.markdown("- Reduce max clusters for elbow method")
 st.sidebar.markdown("- Use smaller datasets for better performance")
+
 
