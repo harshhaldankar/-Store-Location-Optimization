@@ -45,7 +45,7 @@ st.title("Store Location Optimization")
 # Sidebar parameters
 st.sidebar.header("Parameters")
 n_clusters = st.sidebar.slider("Number of Clusters", 2, 10, 5)
-density_threshold = st.sidebar.slider("Density Threshold (%)", 0, 50, 10)
+density_threshold = st.sidebar.slider("Density Threshold (%)", 1, 50, 10)
 percentile_coverage = st.sidebar.slider("Percentile Coverage (%)", 80, 99, 95)
 
 # Performance options
@@ -189,7 +189,7 @@ if uploaded_file is not None:
             x=data['Long'], 
             y=data['Lat'], 
             mode='markers',
-            marker=dict(size=3, color='blue'),
+            marker=dict(size=3, color='blue', alpha = '0.5'),
             name='Overall Data',
             hovertemplate='<b>Overall</b><br>Lat: %{y:.4f}<br>Long: %{x:.4f}<extra></extra>'
         ))
@@ -200,7 +200,7 @@ if uploaded_file is not None:
                 x=filtered_data['Long'], 
                 y=filtered_data['Lat'], 
                 mode='markers',
-                marker=dict(size=3, color='red'),
+                marker=dict(size=3, color='red' ,alpha = '0.7'),
                 name='Filtered Data',
                 hovertemplate='<b>Filtered</b><br>Lat: %{y:.4f}<br>Long: %{x:.4f}<extra></extra>'
             ))
@@ -319,6 +319,7 @@ st.sidebar.markdown("**Performance Tips:**")
 st.sidebar.markdown("- Disable elbow method for faster loading")
 st.sidebar.markdown("- Reduce max clusters for elbow method")
 st.sidebar.markdown("- Use smaller datasets for better performance")
+
 
 
 
