@@ -189,7 +189,7 @@ if uploaded_file is not None:
             x=data['Long'], 
             y=data['Lat'], 
             mode='markers',
-            marker=dict(size=3, color='blue', alpha = '0.5'),
+            marker=dict(size=3, color='blue', opacity=0.5),
             name='Overall Data',
             hovertemplate='<b>Overall</b><br>Lat: %{y:.4f}<br>Long: %{x:.4f}<extra></extra>'
         ))
@@ -200,7 +200,7 @@ if uploaded_file is not None:
                 x=filtered_data['Long'], 
                 y=filtered_data['Lat'], 
                 mode='markers',
-                marker=dict(size=3, color='red' ,alpha = '0.7'),
+                marker=dict(size=3, color='red', opacity=0.7),
                 name='Filtered Data',
                 hovertemplate='<b>Filtered</b><br>Lat: %{y:.4f}<br>Long: %{x:.4f}<extra></extra>'
             ))
@@ -319,6 +319,7 @@ st.sidebar.markdown("**Performance Tips:**")
 st.sidebar.markdown("- Disable elbow method for faster loading")
 st.sidebar.markdown("- Reduce max clusters for elbow method")
 st.sidebar.markdown("- Use smaller datasets for better performance")
+
 
 
 
