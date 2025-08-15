@@ -1,4 +1,4 @@
-# 🏪 Store Location Optimization - Cost Cutting Analysis
+# 🏪 Store Location Optimization
 
 A comprehensive Streamlit application for analyzing order coordinates and optimizing store locations to reduce delivery costs through intelligent clustering analysis.
 
@@ -177,3 +177,4 @@ For questions or issues, please check the troubleshooting section or create an i
 ---
 
 **Happy Analyzing! 🎉**
+
