@@ -6,12 +6,10 @@ A comprehensive Streamlit application for analyzing order coordinates and optimi
 
 - **Interactive Data Upload**: Upload CSV files with order coordinates
 - **Smart Clustering**: K-means clustering with elbow method optimization
-- **Interactive Maps**: Folium-based maps showing clustered orders and store locations
 - **Cost Analysis**: Comprehensive cost comparison between single and multi-store approaches
 - **Density Analysis**: Kernel density estimation for order distribution analysis
 - **Peripheral Analysis**: Identification of low-density, high-distance areas
 - **Downloadable Results**: Export analysis results as CSV
-- **Responsive UI**: Beautiful, modern interface with custom styling
 
 ## 📋 Requirements
 
@@ -28,14 +26,7 @@ A comprehensive Streamlit application for analyzing order coordinates and optimi
 
 ## 🚀 Usage
 
-1. **Run the Streamlit app:**
-   ```bash
-   streamlit run app.py
-   ```
-
-2. **Open your browser** and navigate to the local URL (usually `http://localhost:8501`)
-
-3. **Upload your CSV file** with the following format:
+1. **Upload your CSV file** with the following format:
    ```
    Order ID,Lat,Long
    1,12.925978,77.615465
@@ -43,13 +34,13 @@ A comprehensive Streamlit application for analyzing order coordinates and optimi
    3,12.921465,77.734314
    ```
 
-4. **Configure parameters** in the sidebar:
+2. **Configure parameters** in the sidebar:
    - Cost per km
    - Fixed store cost
    - Number of clusters
    - Random state
 
-5. **Explore the analysis results:**
+3. **Explore the analysis results:**
    - Data overview and statistics
    - Clustering analysis with elbow method
    - Interactive maps
@@ -92,12 +83,6 @@ A comprehensive Streamlit application for analyzing order coordinates and optimi
 - Operational considerations
 - Future planning guidance
 
-## 🔧 Configuration Options
-
-### Cost Parameters
-- **Cost per km**: Delivery cost per kilometer
-- **Fixed store cost**: One-time cost for opening a new store
-
 ### Clustering Parameters
 - **Number of clusters**: How many store locations to consider
 - **Random state**: For reproducible clustering results
@@ -113,7 +98,7 @@ Cost_cutting Analysis/
 └── Order coordinates.csv  # Sample data file
 ```
 
-## 💡 Use Cases
+##  Use Cases
 
 - **E-commerce delivery optimization**
 - **Retail store location planning**
@@ -121,7 +106,7 @@ Cost_cutting Analysis/
 - **Service area planning**
 - **Cost reduction analysis**
 
-## 🎯 Key Benefits
+##  Key Benefits
 
 - **Cost Reduction**: Identify optimal store locations to minimize delivery costs
 - **Data-Driven Decisions**: Make informed decisions based on order patterns
@@ -129,7 +114,7 @@ Cost_cutting Analysis/
 - **Scalable Solution**: Handle large datasets efficiently
 - **Professional Output**: Generate reports and insights for stakeholders
 
-## 🔍 Technical Details
+##  Technical Details
 
 - **Clustering Algorithm**: K-means with elbow method optimization
 - **Distance Calculation**: Haversine formula for geographic distances
@@ -137,44 +122,4 @@ Cost_cutting Analysis/
 - **Data Processing**: Pandas for data manipulation and analysis
 - **Machine Learning**: Scikit-learn for clustering algorithms
 
-## 📈 Output Examples
-
-The app generates:
-- Interactive cluster maps
-- Cost comparison metrics
-- Density distribution charts
-- Distance analysis visualizations
-- Downloadable CSV results with cluster assignments
-
-## 🚨 Troubleshooting
-
-### Common Issues:
-1. **Missing dependencies**: Ensure all packages are installed via `requirements.txt`
-2. **Large file uploads**: The app handles large CSV files efficiently
-3. **Memory issues**: For very large datasets, consider sampling or data reduction
-
-### Performance Tips:
-- Use appropriate number of clusters (5-10 typically works well)
-- Ensure CSV has proper column names (Lat, Long)
-- Close other applications if experiencing memory issues
-
-## 🤝 Contributing
-
-Feel free to enhance the application by:
-- Adding new visualization types
-- Implementing additional clustering algorithms
-- Improving the UI/UX
-- Adding export options for different formats
-
-## 📄 License
-
-This project is open source and available under the MIT License.
-
-## 📞 Support
-
-For questions or issues, please check the troubleshooting section or create an issue in the project repository.
-
----
-
-**Happy Analyzing! 🎉**
 
